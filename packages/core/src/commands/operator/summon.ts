@@ -156,18 +156,25 @@ export default register;
 /**
  * Calculates the rotation to face a target
  */
-function calculateRotationToFace(from: Vector3f, to: Vector3f): Rotation {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const dz = to.z - from.z;
+const calculateRotationToFace = (() => {
+  // stop RAD_TO_DEG recalling it self every time it called.
+  const RAD_TO_DEG = 180 / Math.PI;
 
-  // Calculate the horizontal distance
-  const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+  return function (from: Vector3f, to: Vector3f): Rotation {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const dz = to.z - from.z;
+    // handle better.
+    const horizontal = Math.hypot(dx, dz);
+    // old code kinda goofy 270 and -90 give diffrent anwsers for same question in simple. 
+    //old code did this 270 % 360 = 270; even tho mathmaticly i should just be -90.
+    let yaw = Math.atan2(-dx, dz) * RAD_TO_DEG;
+    if (yaw > 180) yaw -= 360;
+    if (yaw < -180) yaw += 360;
 
-  // Calculate the yaw and pitch
-  const yaw = (Math.atan2(-dx, dz) * (180 / Math.PI)) % 360;
-  const pitch = Math.atan2(-dy, horizontalDist) * (180 / Math.PI);
+    let pitch = Math.atan2(-dy, horizontal) * RAD_TO_DEG;
+    pitch = Math.max(-90, Math.min(90, pitch));
 
-  // Return the rotation
-  return new Rotation(yaw, pitch, yaw);
-}
+    return new Rotation(yaw, pitch, yaw);
+  };
+})();
